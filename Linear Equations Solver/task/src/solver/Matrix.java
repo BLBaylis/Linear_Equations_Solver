@@ -6,6 +6,7 @@ public class Matrix {
     private Row[] matrix;
     private int numOfVariables;
     private int numOfEquations;
+    private boolean hasNoSolutions = false;
 
     Matrix(Row... equations) {
         this.matrix = equations;
@@ -13,34 +14,12 @@ public class Matrix {
         this.numOfVariables = equations[0].size() - 1;
     }
 
-    int getNumOfVariables() {
-        return numOfVariables;
-    }
-
-    int getNumOfEquations() {
-        return numOfEquations;
-    }
-
-    Row getRowAtMatrixIndex(int index) {
+    private Row getRowAtMatrixIndex(int index) {
         return this.matrix[index];
     }
 
-    void formatMatrix() {
-        for (int equationNo = 0, variableNum = 0; equationNo < numOfEquations; equationNo++, variableNum++) {
-            Row equation = matrix[equationNo];
-            //check for equation for zero leading number
-            if (equation.getValueAtRowIndex(variableNum) != 0) {
-                continue;
-            }
-            //if a non-zero value can be found in a row below swap them
-            for (int row = equationNo + 1; row < numOfEquations; row++) {
-                Row currRow = matrix[row];
-                if (currRow.getValueAtRowIndex(variableNum) != 0) {
-                    swapRows(equationNo, row);
-                    break;
-                }
-            }
-        }
+    boolean getHasNoSolutions() {
+        return hasNoSolutions;
     }
 
     private void swapRows(int rowIndex1, int rowIndex2) {
@@ -49,7 +28,110 @@ public class Matrix {
         matrix[rowIndex2] = temp;
     }
 
-    void reduceDiagonalElementToOne(int index) {
+    private void swapCols(int colIndex1, int colIndex2) {
+        for (int i = 0; i < numOfEquations; i++) {
+            Row row = matrix[i];
+            double temp = row.getValueAtRowIndex(colIndex1);
+            row.setValueAtRowIndex(colIndex1, row.getValueAtRowIndex(colIndex2));
+            row.setValueAtRowIndex(colIndex2, temp);
+        }
+    }
+
+    void printMatrix() {
+        System.out.println();
+        DecimalFormat df = new DecimalFormat("0.#####");
+        for (Row row : this.matrix) {
+            for (int j = 0; j < row.getRow().length; j++) {
+                double currEle = row.getValueAtRowIndex(j);
+                String eleToPrint;
+                if (currEle >= 0.0) {
+                    eleToPrint = "  " + df.format(currEle) + "  ";
+                } else {
+                    eleToPrint = " " + df.format(currEle) + "  ";
+                }
+                if (j == 0) {
+                    System.out.print("|" + eleToPrint + "|");
+                    continue;
+                }
+                if (j == row.getRow().length - 1) {
+                    System.out.println(eleToPrint + "|");
+                    continue;
+                }
+                System.out.print(eleToPrint + "|");
+            }
+        }
+        System.out.println();
+    }
+
+    private void preventLeadingZero(int rowNo, int colNo) {
+        if (matrix[rowNo].getValueAtRowIndex(colNo) != 0) {
+            return;
+        }
+        //if non-zero in column below below swap rows
+        for (int otherRowNo = rowNo + 1; otherRowNo < numOfEquations; otherRowNo++) {
+            if (matrix[otherRowNo].getValueAtRowIndex(colNo) != 0) {
+                swapRows(rowNo, otherRowNo);
+                return;
+            }
+        }
+        //if non-zero in same row to the right
+        for (int otherColNo = colNo + 1; otherColNo < numOfVariables; otherColNo++) {
+            if (matrix[rowNo].getValueAtRowIndex(otherColNo) != 0) {
+                swapCols(colNo, otherColNo);
+                return;
+            }
+        }
+        //swap with non-zero below and right if possible
+        for (int otherRowNo = rowNo + 1; otherRowNo < numOfEquations; otherRowNo++) {
+            for (int otherColNo = colNo + 1; otherColNo < numOfVariables; otherColNo++) {
+                if (matrix[otherRowNo].getValueAtRowIndex(otherColNo) != 0) {
+                    swapRows(rowNo, otherRowNo);
+                    swapCols(colNo, otherColNo);
+                    return;
+                }
+            }
+        }
+    }
+
+    private boolean checkForInvalidEquations() {
+        for (int equationNo = numOfEquations - 1; equationNo >= 0; equationNo--) {
+            Row equation = matrix[equationNo];
+            boolean allZeroCoefficients = true;
+            for (int variableNum = 0; variableNum < numOfVariables ; variableNum++) {
+                if (equation.getValueAtRowIndex(variableNum) != 0) {
+                    allZeroCoefficients = false;
+                    break;
+                }
+            }
+            if (allZeroCoefficients && equation.getValueAtRowIndex(numOfVariables) != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean checkForInfiniteSolutions() {
+        int significantEquations = numOfEquations;
+        for (int equationNo = numOfEquations - 1; equationNo >= 0; equationNo--) {
+            if (significantEquations < numOfVariables) {
+                return true;
+            }
+            Row equation = matrix[equationNo];
+            boolean allZeroRow = true;
+            for (int variableNum = 0; variableNum < numOfVariables; variableNum++) {
+                if (equation.getValueAtRowIndex(variableNum) != 0) {
+                    allZeroRow = false;
+                    break;
+                }
+            }
+            if (allZeroRow) {
+                significantEquations--;
+            }
+        }
+        return false;
+    }
+
+    private void reduceDiagonalElementToOne(int index) {
         Row oldRow = this.getRowAtMatrixIndex(index);
         /* if the diagonal element is 1 then no action is needed, if 0 it
         can't be changed from 0*/
@@ -63,7 +145,7 @@ public class Matrix {
         this.printMatrix();
     }
 
-    void reduceElementToZero(int rowNo, int pivotRowNo) {
+    private void reduceElementToZero(int rowNo, int pivotRowNo) {
         //colNo is unnecessary but it it makes the code easier to comprehend
         int colNo = pivotRowNo;
         Row rowToBeReduced = matrix[rowNo];
@@ -85,21 +167,21 @@ public class Matrix {
     }
 
     void reduceToRREF() {
-        /*for every row reduces element at (rowNo, rowNo) to 1, then reduces
-         every other value BELOW it in its column to zero by subtracting multiples
-         of the pivot row.*/
-        for (int pivotRowNo = 0; pivotRowNo < numOfEquations; pivotRowNo++) {
-            this.reduceDiagonalElementToOne(pivotRowNo);
-            for (int otherRowNo = pivotRowNo + 1; otherRowNo < numOfEquations; otherRowNo++) {
-                this.reduceElementToZero(otherRowNo, pivotRowNo);
+        for (int i = 0; i < numOfEquations; i++) {
+            this.preventLeadingZero(i, i);
+            if (this.checkForInvalidEquations()) {
+                this.hasNoSolutions = true;
+                return;
+            }
+            this.reduceDiagonalElementToOne(i);
+            for (int j = i + 1; j < numOfEquations; j++) {
+                this.reduceElementToZero(j, i);
             }
         }
 
-        /*Starting from the bottom right variable value reduces every other value
-        ABOVE it in its column to zero in the same way as on the way down*/
-        for (int pivotRow = numOfEquations - 1; pivotRow >= 0; pivotRow--) {
-            for (int otherRowNo = pivotRow - 1; otherRowNo >= 0; otherRowNo--) {
-                this.reduceElementToZero(otherRowNo, pivotRow);
+        for (int i = numOfEquations - 1; i >= 0; i--) {
+            for (int j = i - 1; j >= 0; j--) {
+                this.reduceElementToZero(j, i);
             }
         }
     }
@@ -110,32 +192,6 @@ public class Matrix {
             solution[i] = this.matrix[i].getValueAtRowIndex(numOfVariables);
         }
         return solution;
-    }
-
-    void printMatrix() {
-        System.out.println();
-        DecimalFormat df = new DecimalFormat("0.#####");
-        for (Row row : this.matrix) {
-            for (int j = 0; j < row.size(); j++) {
-                double currEle = row.getValueAtRowIndex(j);
-                String eleToPrint;
-                if (currEle >= 0.0) {
-                    eleToPrint = "  " + df.format(currEle) + "  ";
-                } else {
-                    eleToPrint = " " + df.format(currEle) + "  ";
-                }
-                if (j == 0) {
-                    System.out.print("|" + eleToPrint + "|");
-                    continue;
-                }
-                if (j == row.size() - 1) {
-                    System.out.println(eleToPrint + "|");
-                    continue;
-                }
-                System.out.print(eleToPrint + "|");
-            }
-        }
-        System.out.println();
     }
 
     public static void main(String[] args) {

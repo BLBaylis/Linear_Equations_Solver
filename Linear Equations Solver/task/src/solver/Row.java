@@ -11,12 +11,18 @@ public class Row {
         return row.length;
     }
 
+    double[] getRow() {
+        return this.row;
+    }
+
     double getValueAtRowIndex(int index) {
         return this.row[index];
     }
 
-    /*there is repeated code between the two methods below but refactoring into
-    a single function feels like it will add unnecessary complexity*/
+    void setValueAtRowIndex(int index, double value) {
+        this.row[index] = value;
+    }
+
     Row multiply(double multiple) {
         double[] newRow = this.row.clone();
         for (int i = 0; i < newRow.length; i++) {
@@ -27,8 +33,9 @@ public class Row {
 
     Row subtract(Row rowToSubtract) {
         double[] newRow = this.row.clone();
+        double[] rowToSubtractArr = rowToSubtract.getRow();
         for (int i = 0; i < newRow.length; i++) {
-            newRow[i] -= rowToSubtract.getValueAtRowIndex(i);
+            newRow[i] -= rowToSubtractArr[i];
         }
         return new Row(newRow);
     }
