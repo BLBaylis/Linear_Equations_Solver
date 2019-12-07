@@ -37,26 +37,38 @@ public class Main {
             System.out.println("No file found.");
             return;
         }
+
         Matrix matrix = new Matrix(equations);
         System.out.println("Initial matrix");
-        matrix.printMatrix();
 
-        matrix.reduceToRREF();
+        Controller controller = new Controller(new PrintMatrixCommand(matrix));
+        controller.executeCommand();
+
+        controller.setCommand(new ReduceToRREFCommand(matrix));
+        controller.executeCommand();
+
+        controller.setbCommand(new GetHasNoSolutionsCommand(matrix));
+        boolean hasNoSolutions = controller.executeBooleanCommand();
+
+        controller.setbCommand(new CheckForInfiniteSolutionsBcommand((matrix)));
+        boolean hasInfiniteSolutions = controller.executeBooleanCommand();
+
         String solutionType = "Unique";
-        if (matrix.getHasNoSolutions()) {
+        if (hasNoSolutions) {
             solutionType = "No solutions";
-        } else if (matrix.checkForInfiniteSolutions()) {
+        } else if (hasInfiniteSolutions) {
             solutionType = "Infinitely many solutions";
         }
 
         File outputFile = Paths.get(outputPath).toFile();
+        controller.setdArrCommand(new GetSolutionsCommand(matrix));
 
         try (PrintWriter printWriter = new PrintWriter(outputFile)) {
             if (!"Unique".equals(solutionType)) {
                 System.out.println(solutionType);
                 printWriter.println(solutionType);
             } else {
-                double[] solutions = matrix.getSolution();
+                double[] solutions = controller.executeDoubleArrCommand();
                 System.out.println("Solution: " + Arrays.toString(solutions));
                 for (double variable : solutions) {
                     printWriter.println(variable);
