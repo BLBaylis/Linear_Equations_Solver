@@ -1,8 +1,5 @@
 package solver;
 
-import solver.Command;
-import solver.Matrix;
-
 class ReduceToRREFCommand implements Command {
     private Matrix matrix;
 

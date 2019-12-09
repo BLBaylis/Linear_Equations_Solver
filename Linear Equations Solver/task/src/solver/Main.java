@@ -39,19 +39,14 @@ public class Main {
         }
 
         Matrix matrix = new Matrix(equations);
-        System.out.println("Initial matrix");
-
-        Controller controller = new Controller(new PrintMatrixCommand(matrix));
+        Controller controller = new Controller(new ReduceToRREFCommand(matrix));
         controller.executeCommand();
 
-        controller.setCommand(new ReduceToRREFCommand(matrix));
+        boolean hasNoSolutions = matrix.getHasNoSolutions();
+
+        controller.setCommand(new CheckForInfiniteSolutionsCommand(matrix));
         controller.executeCommand();
-
-        controller.setbCommand(new GetHasNoSolutionsCommand(matrix));
-        boolean hasNoSolutions = controller.executeBooleanCommand();
-
-        controller.setbCommand(new CheckForInfiniteSolutionsBcommand((matrix)));
-        boolean hasInfiniteSolutions = controller.executeBooleanCommand();
+        boolean hasInfiniteSolutions = matrix.getHasInfiniteSolutions();
 
         String solutionType = "Unique";
         if (hasNoSolutions) {
@@ -60,17 +55,19 @@ public class Main {
             solutionType = "Infinitely many solutions";
         }
 
+        controller.setCommand(new FindUniqueSolutionCommand(matrix));
+
         File outputFile = Paths.get(outputPath).toFile();
-        controller.setdArrCommand(new GetSolutionsCommand(matrix));
 
         try (PrintWriter printWriter = new PrintWriter(outputFile)) {
             if (!"Unique".equals(solutionType)) {
                 System.out.println(solutionType);
                 printWriter.println(solutionType);
             } else {
-                double[] solutions = controller.executeDoubleArrCommand();
-                System.out.println("Solution: " + Arrays.toString(solutions));
-                for (double variable : solutions) {
+                controller.executeCommand();
+                double[] solution = matrix.getSolution();
+                System.out.println("Solution: " + Arrays.toString(solution));
+                for (double variable : solution) {
                     printWriter.println(variable);
                 }
             }

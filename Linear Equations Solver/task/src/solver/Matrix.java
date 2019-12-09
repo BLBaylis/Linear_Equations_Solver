@@ -4,9 +4,11 @@ import java.text.DecimalFormat;
 
 public class Matrix {
     private Row[] matrix;
-    private int numOfVariables;
-    private int numOfEquations;
+    private final int numOfVariables;
+    private final int numOfEquations;
     private boolean hasNoSolutions = false;
+    private boolean hasInfiniteSolutions = false;
+    private double[] solution;
 
     Matrix(Row... equations) {
         this.matrix = equations;
@@ -14,12 +16,23 @@ public class Matrix {
         this.numOfVariables = equations[0].size() - 1;
     }
 
-    private Row getRowAtMatrixIndex(int index) {
-        return this.matrix[index];
+    boolean getHasInfiniteSolutions() {
+        return hasInfiniteSolutions;
     }
 
     boolean getHasNoSolutions() {
         return hasNoSolutions;
+    }
+
+    double[] getSolution() {
+        if (hasNoSolutions || hasInfiniteSolutions) {
+            System.out.println("Warning! Returned unique solution when none available!");
+        }
+        return solution;
+    }
+
+    private Row getRowAtMatrixIndex(int index) {
+        return this.matrix[index];
     }
 
     private void swapRows(int rowIndex1, int rowIndex2) {
@@ -37,7 +50,7 @@ public class Matrix {
         }
     }
 
-    void printMatrix() {
+    private void printMatrix() {
         System.out.println();
         DecimalFormat df = new DecimalFormat("0.#####");
         for (Row row : this.matrix) {
@@ -93,42 +106,28 @@ public class Matrix {
         }
     }
 
-    private boolean checkForInvalidEquations() {
+    private boolean isMatrixInconsistent() {
         for (int equationNo = numOfEquations - 1; equationNo >= 0; equationNo--) {
             Row equation = matrix[equationNo];
-            boolean allZeroCoefficients = true;
-            for (int variableNum = 0; variableNum < numOfVariables ; variableNum++) {
-                if (equation.getValueAtRowIndex(variableNum) != 0) {
-                    allZeroCoefficients = false;
-                    break;
-                }
-            }
-            if (allZeroCoefficients && equation.getValueAtRowIndex(numOfVariables) != 0) {
+            if (equation.doesRowHaveAllZeroCoefficients() && equation.getValueAtRowIndex(numOfVariables) != 0) {
                 return true;
             }
         }
         return false;
     }
 
-    boolean checkForInfiniteSolutions() {
+    void checkForInfiniteSolutions() {
         int significantEquations = numOfEquations;
         for (int equationNo = numOfEquations - 1; equationNo >= 0; equationNo--) {
-            if (significantEquations < numOfVariables) {
-                return true;
-            }
             Row equation = matrix[equationNo];
-            boolean allZeroRow = true;
-            for (int variableNum = 0; variableNum < numOfVariables; variableNum++) {
-                if (equation.getValueAtRowIndex(variableNum) != 0) {
-                    allZeroRow = false;
-                    break;
-                }
-            }
-            if (allZeroRow) {
+            if (equation.doesRowHaveAllZeroCoefficients() && equation.getValueAtRowIndex(numOfVariables) == 0) {
                 significantEquations--;
             }
+            if (significantEquations < numOfVariables) {
+                hasInfiniteSolutions = true;
+                return;
+            }
         }
-        return false;
     }
 
     private void reduceDiagonalElementToOne(int index) {
@@ -139,8 +138,7 @@ public class Matrix {
             return;
         }
         double multiple = 1/oldRow.getValueAtRowIndex(index);
-        Row newRow = oldRow.multiply(multiple);
-        matrix[index] = newRow;
+        matrix[index] = oldRow.multiply(multiple);
         System.out.println(multiple + " * R" + (index + 1) + " => R" + (index + 1));
         this.printMatrix();
     }
@@ -169,7 +167,7 @@ public class Matrix {
     void reduceToRREF() {
         for (int i = 0; i < numOfEquations; i++) {
             this.preventLeadingZero(i, i);
-            if (this.checkForInvalidEquations()) {
+            if (this.isMatrixInconsistent()) {
                 this.hasNoSolutions = true;
                 return;
             }
@@ -186,12 +184,11 @@ public class Matrix {
         }
     }
 
-    double[] getSolution() {
-        double[] solution = new double[numOfVariables];
+    void findUniqueSolution() {
+        solution = new double[numOfVariables];
         for (int i = 0; i < numOfVariables; i++) {
             solution[i] = this.matrix[i].getValueAtRowIndex(numOfVariables);
         }
-        return solution;
     }
 
     public static void main(String[] args) {
