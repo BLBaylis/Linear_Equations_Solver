@@ -1,10 +1,12 @@
 package solver;
 
+import java.util.Arrays;
+
 public class Row {
-    private double[] row;
+    private Complex[] row;
     private int numOfVariables;
 
-    Row(double... coefficients) {
+    Row(Complex... coefficients) {
         this.row = coefficients;
         this.numOfVariables = row.length - 1;
     }
@@ -13,37 +15,37 @@ public class Row {
         return row.length;
     }
 
-    double[] getRow() {
-        return this.row;
+    @Override
+    public String toString() {
+        return Arrays.toString(row);
     }
 
-    double getValueAtRowIndex(int index) {
+    Complex getValueAtRowIndex(int index) {
         return this.row[index];
     }
 
-    void setValueAtRowIndex(int index, double value) {
+    void setValueAtRowIndex(int index, Complex value) {
         this.row[index] = value;
     }
 
-    Row multiply(double multiple) {
-        double[] newRow = row.clone();
+    Row multiply(Complex multiple) {
+        Complex[] newRow = row.clone();
         for (int i = 0; i < newRow.length; i++) {
-            newRow[i] *= multiple;
+            newRow[i] = newRow[i].multiply(multiple);
         }
         return new Row(newRow);
     }
 
     Row subtract(Row rowToSubtract) {
-        double[] rowToSubtractArr = rowToSubtract.getRow();
         for (int i = 0; i < row.length; i++) {
-            row[i] -= rowToSubtractArr[i];
+            row[i] = row[i].subtract(rowToSubtract.getValueAtRowIndex(i));
         }
         return this;
     }
 
     boolean doesRowHaveAllZeroCoefficients() {
         for (int variableNum = 0; variableNum < numOfVariables; variableNum++) {
-            if (row[variableNum] != 0) {
+            if (!row[variableNum].equals(Complex.ZERO)) {
                 return false;
             }
         }

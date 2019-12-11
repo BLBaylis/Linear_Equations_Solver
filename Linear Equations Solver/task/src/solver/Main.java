@@ -14,9 +14,9 @@ public class Main {
         Row[] equations = new Row[numOfEquations];
         int equationNo = 0;
         while (scanner.hasNext()) {
-            double[] equation = new double[numOfVariables + 1];
+            Complex[] equation = new Complex[numOfVariables + 1];
             for (int i = 0; i < numOfVariables + 1; i++) {
-                equation[i] = scanner.nextDouble();
+                equation[i] = new Complex(scanner.next());
             }
             equations[equationNo] = new Row(equation);
             equationNo++;
@@ -65,9 +65,9 @@ public class Main {
                 printWriter.println(solutionType);
             } else {
                 controller.executeCommand();
-                double[] solution = matrix.getSolution();
+                String[] solution = matrix.getSolution();
                 System.out.println("Solution: " + Arrays.toString(solution));
-                for (double variable : solution) {
+                for (String variable : solution) {
                     printWriter.println(variable);
                 }
             }
